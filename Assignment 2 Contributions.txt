@@ -1,0 +1,11 @@
+Assignment 2 Contributions
+Jamahl:
+- Created the base file to be used in the project
+- Created a github repository for project file
+- Added command line parser
+- Added producing and consuming message command parser
+
+Chance:
+- 
+- 
+- 
