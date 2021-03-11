@@ -4,6 +4,8 @@ Jamahl:
 - Created a github repository for project file
 - Added command line parser
 - Added producing and consuming message command parser
+- Set up initialization of rabbitMQ exchanges and queues
+- Added checkpoint print out statements
 
 Chance:
 - 

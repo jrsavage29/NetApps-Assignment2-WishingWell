@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 import sys
+import time
 import os
-import json
 import pika
 import pymongo
 
 def main(argv):
     repo_ip = None #127.0.0.1
-    repo_port = None #50000
+    repo_port = None #5672
 
     user_input = None
     #exchange name is also known as the place name (e.g. Squires, Library, Goodwin)
@@ -16,6 +16,10 @@ def main(argv):
     queue_name = None
     #message is just the message that should be produced (if a message is in the user's command then it will be a produce command)
     message = None
+
+    #The user and password for admin connection to virtual host
+    username = "assignment2"
+    password = "wishingwell"
 
     #possible boolean flag to use for notifying consumuing or producing command has been entered
     is_producing = False
@@ -38,18 +42,63 @@ def main(argv):
             repo_port = argv[argpos + 1]
         
     # Display what was parsed
-    print("[] - Connecting to " + str(repo_ip) + " on port " + str(repo_port))
+    print("[Ctrl 01] - Connecting to RabbitMQ instance on" + str(repo_ip) + " with port " + str(repo_port))
+
+    #setting up connection params for RabbitMQ
+    credentials = pika.PlainCredentials(username, password)
+    parameters = pika.ConnectionParameters(repo_ip, repo_port, '/', credentials)
+    connection = pika.BlockingConnection(parameters)
+    channel = connection.channel()
+
+    #Initialize exchanges and queues
+    print("[Ctrl 02] - Initialized Exchanges and Queues: ")
+    exchanges = ["Squires", "Goodwin", "Library"]
+    squires_queues = ["Food", "Meetings", "Rooms"]
+    goodwin_queues = ["Classrooms", "Auditorium"]
+    library_queues = ["Noise", "Seating", "Wishes"]
+
+    for exchange in exchanges:
+        if exchange == "Squires":
+            for queue in squires_queues:
+                channel.exchange_declare(exchange = exchange, exchange_type= 'direct')
+                channel.queue_declare(queue = queue)
+                print(f'{exchange}:{queue}')
+                channel.queue_bind(exchange = exchange, queue = queue, routing_key = queue)
+
+        elif exchange == "Goodwin":
+            for queue in goodwin_queues:
+                channel.exchange_declare(exchange = exchange, exchange_type= 'direct')
+                channel.queue_declare(queue = queue)
+                print(f"{exchange}:{queue}")
+                channel.queue_bind(exchange = exchange, queue = queue, routing_key = queue)
+
+        elif exchange == "Library":
+            for queue in library_queues:
+                channel.exchange_declare(exchange = exchange, exchange_type= 'direct')
+                channel.queue_declare(queue = queue)
+                print(f'{exchange}:{queue}')
+                channel.queue_bind(exchange = exchange, queue = queue, routing_key = queue)
+
+    #Initialize MongoDB datastore !STILL NEEDS TO BE DONE!!!!!!!!!!!!############################################################
+    db = pymongo.MongoClient().assignment2
+    db_stats = { } #currently empty
+    #db.utilization.insert_one() #use to insert into collection
+    print("[Ctrl 03] - Initialized MongoDB datastore")
 
     #parse the user command and determine if it's a produce or consume command
     while True:
-        user_input = str(input("Enter your command: "))
+        user_input = str(input("[Ctrl 04] - Enter your command: "))
         
         #storing original input just in case
         original_input = user_input
 
+        if user_input == "exit()":
+            print("[Ctrl 08] - Exiting")
+            sys.exit(0)
+
         try:
             #parsing the input
-            assert 'p:' in user_input or 'c:' in user_input, "That's an invalid command. Please try again." 
+            assert 'p:' in user_input or 'c:' in user_input 
 
             #if there's a message then we know this a producing command
             if 'p:' in user_input: 
@@ -108,16 +157,17 @@ def main(argv):
                  assert queue_name == 'Noise' or queue_name == 'Seating' or queue_name == 'Wishes', queue_name + " is not a valid queue for Library!"
         
         except AssertionError as msg:
-            print(msg, "Please enter a valid command.")
+            print(msg, "Please enter a valid command. If you're trying to exit, use the command \"exit()\"")
 
         else:
             break
     
-    #simple print statement to verify that everything was parsed correctly
+    #print statement to verify that everything was parsed correctly
     if is_producing == True:
-        print("The Place is:|", exchange_name, "|\nThe Subject is:|", queue_name, "|\nThe Message is:|", message,"|")
+        print(f"[Ctrl 06] - Produced message {message} on {exchange_name}:{queue_name}")
     else:
-        print("The Place is:|", exchange_name, "|\nThe Subject is:|", queue_name,"|")
+        consumed_message = "\"I'm a temp message\""
+        print(f"[Ctrl 07] - Consumed message {consumed_message} on {exchange_name}:{queue_name}") #place a variable containing the consumed message in the empty bracket
 
 
     
