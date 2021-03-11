@@ -6,6 +6,7 @@ Jamahl:
 - Added producing and consuming message command parser
 - Set up initialization of rabbitMQ exchanges and queues
 - Added checkpoint print out statements
+- Set up admin user with permissions
 
 Chance:
 - 
