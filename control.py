@@ -167,23 +167,6 @@ def main(argv):
         else:
             break
 
-    # print statement to verify that everything was parsed correctly
-    if is_producing:
-        print(f"[Ctrl 06] - Produced message {message} on {exchange_name}:{queue_name}")
-        channel.exchange_declare(exchange=exchange_name, exchange_type='direct')
-        byteMsg = message.encode()
-        channel.basic_publish(exchange=exchange_name, routing_key=queue_name, body=byteMsg)
-    else:
-        consumed_message = "\"I'm a temp message\""
-        # place a variable containing the consumed message in the empty bracket
-        print(f"[Ctrl 07] - Consumed message {consumed_message} on {exchange_name}:{queue_name}")
-
-        def callback(ch, method, properties, body):
-            print("%r:%r" % (method.routing_key, body))
-
-        channel.basic_consume(queue=queue_name, on_message_callback=callback, auto_ack=False)
-        channel.start_consuming()
-
     msg_id = "15" + "$" + str(time.time())
     db_stats = {"Action": action,
                 "Place": exchange_name,
@@ -195,12 +178,31 @@ def main(argv):
     squiresDB = mainDB["Squires"]
     goodwinDB = mainDB["Goodwin"]
     libraryDB = mainDB["Library"]
+
+    print(f"[Ctrl 05] – Inserted command into MongoDB: {db_stats}")
+
     if exchange_name == 'Squires':
         squiresDB.insert_one(db_stats)
     elif exchange_name == 'Goodwin':
         goodwinDB.insert_one(db_stats)
     elif exchange_name == 'Library':
         libraryDB.insert_one(db_stats)
+
+    # print statement to verify that everything was parsed correctly
+    if is_producing:
+        print(f"[Ctrl 06] - Produced message {message} on {exchange_name}:{queue_name}")
+        byteMsg = message.encode()
+        channel.basic_publish(exchange=exchange_name, routing_key=queue_name, body=byteMsg)
+    else:
+        consumed_message = "\"I'm a temp message\""
+        # place a variable containing the consumed message in the empty bracket
+        print(f"[Ctrl 07] - Consumed message {consumed_message} on {exchange_name}:{queue_name}")
+
+        def callback(ch, method, properties, body):
+            print("%r:%r" % (method.routing_key, body.decode()))
+
+        channel.basic_consume(queue=queue_name, on_message_callback=callback, auto_ack=True)
+        channel.start_consuming()
 
 
 if __name__ == "__main__":
