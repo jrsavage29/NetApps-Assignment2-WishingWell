@@ -7,7 +7,7 @@ import pymongo
 
 
 def callback(ch, method, properties, body):
-    print("%r:%r" % (method.routing_key, body.decode()))
+    print(f"[Ctrl 07] - Consumed message {body.decode()} on {method.exchange}:{method.routing_key}")
 
 def main(argv):
     repo_ip = None  # 127.0.0.1
@@ -83,18 +83,10 @@ def main(argv):
                 print(f'{exchange}:{queue}')
                 channel.queue_bind(exchange=exchange, queue=queue, routing_key=queue)
 
-    # Initialize MongoDB datastore !STILL NEEDS TO BE DONE!!!!!!!!!!!!############################################################
-    # i dont know that we need the db_stats yet until we actually have values
+    # Initialize MongoDB database
     squiresDB = pymongo.MongoClient().Squires
     goodwinDB = pymongo.MongoClient().Goodwin
     libraryDB = pymongo.MongoClient().Library
-    # db_stats = {"Action": "",
-    #             "Place": "",
-    #             "MsgID": "",
-    #             "Subject": "",
-    #             "Message": ""
-    #             }  # currently empty
-    # db.utilization.insert_one() #use to insert into collection
     print("[Ctrl 03] - Initialized MongoDB datastore")
 
     # parse the user command and determine if it's a produce or consume command
@@ -201,9 +193,7 @@ def main(argv):
                 byteMsg = message.encode()
                 channel.basic_publish(exchange=exchange_name, routing_key=queue_name, body=byteMsg)
             else:
-                consumed_message = "\"I'm a temp message\""
                 # place a variable containing the consumed message in the empty bracket
-                print(f"[Ctrl 07] - Consumed message {consumed_message} on {exchange_name}:{queue_name}")
                 channel.basic_consume(queue=queue_name, on_message_callback=callback, auto_ack=True)
                 try:
                     channel.start_consuming()
