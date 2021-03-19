@@ -138,12 +138,10 @@ def main(argv):
                 exchange_name = (user_input[start_index:end_index]).strip()
 
                 user_input = user_input.strip('c:')
-                user_input = user_input.strip(exchange_name)
-                user_input = user_input.strip('+')
+                start_index = user_input.find('+') + 1
 
                 # The remainder of the parsed input string should just be the queue name
-                queue_name = user_input.strip()
-
+                queue_name = (user_input[start_index:]).strip()
             # validate you received the correct input for a possible exchange according to the project spec
             assert exchange_name == 'Squires' or exchange_name == 'Goodwin' or exchange_name == 'Library', exchange_name + " is not a valid exchange!"
 
