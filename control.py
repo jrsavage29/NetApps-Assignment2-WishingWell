@@ -6,6 +6,9 @@ import pika
 import pymongo
 
 
+def callback(ch, method, properties, body):
+    print("%r:%r" % (method.routing_key, body.decode()))
+
 def main(argv):
     repo_ip = None  # 127.0.0.1
     repo_port = None  # 5672
@@ -82,7 +85,9 @@ def main(argv):
 
     # Initialize MongoDB datastore !STILL NEEDS TO BE DONE!!!!!!!!!!!!############################################################
     # i dont know that we need the db_stats yet until we actually have values
-    db = pymongo.MongoClient('mongodb://localhost:27017/')
+    squiresDB = pymongo.MongoClient().Squires
+    goodwinDB = pymongo.MongoClient().Goodwin
+    libraryDB = pymongo.MongoClient().Library
     # db_stats = {"Action": "",
     #             "Place": "",
     #             "MsgID": "",
@@ -174,19 +179,28 @@ def main(argv):
                 "Subject": queue_name,
                 "Message": message
                 }
-    mainDB = db["assignment2"]
-    squiresDB = mainDB["Squires"]
-    goodwinDB = mainDB["Goodwin"]
-    libraryDB = mainDB["Library"]
 
     print(f"[Ctrl 05] – Inserted command into MongoDB: {db_stats}")
 
     if exchange_name == 'Squires':
-        squiresDB.insert_one(db_stats)
+        if queue_name == 'Food':
+            squiresDB.Food.insert_one(db_stats)
+        elif queue_name == 'Meetings':
+            squiresDB.Meetings.insert_one(db_stats)
+        elif queue_name == 'Rooms':
+            squiresDB.Rooms.insert_one(db_stats)
     elif exchange_name == 'Goodwin':
-        goodwinDB.insert_one(db_stats)
+        if queue_name == 'Classrooms':
+            goodwinDB.Classrooms.insert_one(db_stats)
+        elif queue_name == 'Auditorium':
+            goodwinDB.Auditorium.insert_one(db_stats)
     elif exchange_name == 'Library':
-        libraryDB.insert_one(db_stats)
+        if queue_name == 'Noise':
+            libraryDB.Noise.insert_one(db_stats)
+        elif queue_name == 'Seating':
+            libraryDB.Seating.insert_one(db_stats)
+        elif queue_name == 'Wishes':
+            libraryDB.Wishes.insert_one(db_stats)
 
     # print statement to verify that everything was parsed correctly
     if is_producing:
@@ -197,9 +211,6 @@ def main(argv):
         consumed_message = "\"I'm a temp message\""
         # place a variable containing the consumed message in the empty bracket
         print(f"[Ctrl 07] - Consumed message {consumed_message} on {exchange_name}:{queue_name}")
-
-        def callback(ch, method, properties, body):
-            print("%r:%r" % (method.routing_key, body.decode()))
 
         channel.basic_consume(queue=queue_name, on_message_callback=callback, auto_ack=True)
         channel.start_consuming()
