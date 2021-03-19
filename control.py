@@ -100,7 +100,7 @@ def main(argv):
     # parse the user command and determine if it's a produce or consume command
     while True:
         user_input = str(input("[Ctrl 04] - Enter your command: "))
-
+        action = ""
         # storing original input just in case
         original_input = user_input
 
@@ -111,7 +111,6 @@ def main(argv):
         try:
             # parsing the input
             assert 'p:' in user_input or 'c:' in user_input
-            action = ""
             # if there's a message then we know this a producing command
             if 'p:' in user_input:
                 print('This is a producing command')
@@ -166,54 +165,54 @@ def main(argv):
             elif exchange_name == 'Library':
                 assert queue_name == 'Noise' or queue_name == 'Seating' or queue_name == 'Wishes', queue_name + " is not a valid queue for Library!"
 
+            msg_id = "15" + "$" + str(time.time())
+            db_stats = {"Action": action,
+                        "Place": exchange_name,
+                        "MsgID": msg_id,
+                        "Subject": queue_name,
+                        "Message": message
+                        }
+
+            print(f"[Ctrl 05] – Inserted command into MongoDB: {db_stats}")
+
+            if exchange_name == 'Squires':
+                if queue_name == 'Food':
+                    squiresDB.Food.insert_one(db_stats)
+                elif queue_name == 'Meetings':
+                    squiresDB.Meetings.insert_one(db_stats)
+                elif queue_name == 'Rooms':
+                    squiresDB.Rooms.insert_one(db_stats)
+            elif exchange_name == 'Goodwin':
+                if queue_name == 'Classrooms':
+                    goodwinDB.Classrooms.insert_one(db_stats)
+                elif queue_name == 'Auditorium':
+                    goodwinDB.Auditorium.insert_one(db_stats)
+            elif exchange_name == 'Library':
+                if queue_name == 'Noise':
+                    libraryDB.Noise.insert_one(db_stats)
+                elif queue_name == 'Seating':
+                    libraryDB.Seating.insert_one(db_stats)
+                elif queue_name == 'Wishes':
+                    libraryDB.Wishes.insert_one(db_stats)
+
+            # print statement to verify that everything was parsed correctly
+            if is_producing:
+                print(f"[Ctrl 06] - Produced message {message} on {exchange_name}:{queue_name}")
+                byteMsg = message.encode()
+                channel.basic_publish(exchange=exchange_name, routing_key=queue_name, body=byteMsg)
+            else:
+                consumed_message = "\"I'm a temp message\""
+                # place a variable containing the consumed message in the empty bracket
+                print(f"[Ctrl 07] - Consumed message {consumed_message} on {exchange_name}:{queue_name}")
+                channel.basic_consume(queue=queue_name, on_message_callback=callback, auto_ack=True)
+                try:
+                    channel.start_consuming()
+                except KeyboardInterrupt:
+                    channel.stop_consuming()
+
         except AssertionError as msg:
             print(msg, "Please enter a valid command. If you're trying to exit, use the command \"exit()\"")
 
-        else:
-            break
-
-    msg_id = "15" + "$" + str(time.time())
-    db_stats = {"Action": action,
-                "Place": exchange_name,
-                "MsgID": msg_id,
-                "Subject": queue_name,
-                "Message": message
-                }
-
-    print(f"[Ctrl 05] – Inserted command into MongoDB: {db_stats}")
-
-    if exchange_name == 'Squires':
-        if queue_name == 'Food':
-            squiresDB.Food.insert_one(db_stats)
-        elif queue_name == 'Meetings':
-            squiresDB.Meetings.insert_one(db_stats)
-        elif queue_name == 'Rooms':
-            squiresDB.Rooms.insert_one(db_stats)
-    elif exchange_name == 'Goodwin':
-        if queue_name == 'Classrooms':
-            goodwinDB.Classrooms.insert_one(db_stats)
-        elif queue_name == 'Auditorium':
-            goodwinDB.Auditorium.insert_one(db_stats)
-    elif exchange_name == 'Library':
-        if queue_name == 'Noise':
-            libraryDB.Noise.insert_one(db_stats)
-        elif queue_name == 'Seating':
-            libraryDB.Seating.insert_one(db_stats)
-        elif queue_name == 'Wishes':
-            libraryDB.Wishes.insert_one(db_stats)
-
-    # print statement to verify that everything was parsed correctly
-    if is_producing:
-        print(f"[Ctrl 06] - Produced message {message} on {exchange_name}:{queue_name}")
-        byteMsg = message.encode()
-        channel.basic_publish(exchange=exchange_name, routing_key=queue_name, body=byteMsg)
-    else:
-        consumed_message = "\"I'm a temp message\""
-        # place a variable containing the consumed message in the empty bracket
-        print(f"[Ctrl 07] - Consumed message {consumed_message} on {exchange_name}:{queue_name}")
-
-        channel.basic_consume(queue=queue_name, on_message_callback=callback, auto_ack=True)
-        channel.start_consuming()
 
 
 if __name__ == "__main__":
